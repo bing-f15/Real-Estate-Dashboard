@@ -7,8 +7,6 @@ def load_data(file_path):
     """
     try:
         # Read the file
-        # The file is comma separated but values are quoted.
-        # Header is on line 0 (1st line).
         df = pd.read_csv(file_path, quotechar='"', skipinitialspace=True)
         
         # Clean column names (strip whitespace)
@@ -73,11 +71,12 @@ def load_data(file_path):
         # For the dashboard, we might want to keep them but filter in charts.
         # Let's keep them and handle in charts.
         
-        return df
+        return df, None
         
     except Exception as e:
-        print(f"Error loading data: {e}")
-        return None
+        error_msg = f"Error loading data: {e}"
+        print(error_msg)
+        return None, error_msg
 
 if __name__ == "__main__":
     # Test loading

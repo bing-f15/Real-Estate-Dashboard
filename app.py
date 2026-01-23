@@ -13,10 +13,11 @@ def get_data():
     file_path = "recent_sales.txt" 
     return load_data(file_path)
 
-df = get_data()
+df, error = get_data()
 
 if df is None:
-    st.error("Failed to load data. Please check if 'recent_sales.txt' exists.")
+    st.error(f"Failed to load data. {error}")
+    st.info("Check if 'recent_sales.txt' is in your GitHub repository and its size in GitHub. If it's missing, you may need to commit it again.")
     st.stop()
 
 # Sidebar Filters
