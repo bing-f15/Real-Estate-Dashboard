@@ -23,25 +23,56 @@ if df is None:
 # Sidebar Filters
 st.sidebar.header("Drill Down Filters")
 
+# Initialize filtered_df
+filtered_df = df.copy()
+
+# 1. Asset Type
+asset_types = ["All"] + sorted(filtered_df['Asset Type'].dropna().unique().tolist())
+selected_asset_type = st.sidebar.selectbox("Asset Type", asset_types)
+
+if selected_asset_type != "All":
+    filtered_df = filtered_df[filtered_df['Asset Type'] == selected_asset_type]
+
+# 2. Property Type
+# Filter options based on previous selection to make it dynamic? Or keep static list? 
+# Dynamic is better UX.
+property_types = ["All"] + sorted(filtered_df['Property Type'].dropna().unique().tolist())
+selected_property_type = st.sidebar.selectbox("Property Type", property_types)
+
+if selected_property_type != "All":
+    filtered_df = filtered_df[filtered_df['Property Type'] == selected_property_type]
+
+# 3. Sale Type (Type)
+sale_types = ["All"] + sorted(filtered_df['Sale Type'].dropna().unique().tolist())
+selected_sale_type = st.sidebar.selectbox("Sale Type", sale_types)
+
+if selected_sale_type != "All":
+    filtered_df = filtered_df[filtered_df['Sale Type'] == selected_sale_type]
+
+# 4. Sequence
+sequences = ["All"] + sorted(filtered_df['Sequence'].dropna().unique().tolist())
+selected_sequence = st.sidebar.selectbox("Sequence", sequences)
+
+if selected_sequence != "All":
+    filtered_df = filtered_df[filtered_df['Sequence'] == selected_sequence]
+
 # Filter by District
-districts = ["All"] + sorted(df['District'].dropna().unique().tolist())
-selected_district = st.sidebar.selectbox("Select District", districts)
+districts = ["All"] + sorted(filtered_df['District'].dropna().unique().tolist())
+selected_district = st.sidebar.selectbox("District", districts)
 
 if selected_district != "All":
-    filtered_df = df[df['District'] == selected_district]
-else:
-    filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df['District'] == selected_district]
 
 # Filter by Community
 communities = ["All"] + sorted(filtered_df['Community'].dropna().unique().tolist())
-selected_community = st.sidebar.selectbox("Select Community", communities)
+selected_community = st.sidebar.selectbox("Community", communities)
 
 if selected_community != "All":
     filtered_df = filtered_df[filtered_df['Community'] == selected_community]
 
 # Filter by Project
 projects = ["All"] + sorted(filtered_df['Project'].dropna().unique().tolist())
-selected_project = st.sidebar.selectbox("Select Project", projects)
+selected_project = st.sidebar.selectbox("Project", projects)
 
 if selected_project != "All":
     filtered_df = filtered_df[filtered_df['Project'] == selected_project]
