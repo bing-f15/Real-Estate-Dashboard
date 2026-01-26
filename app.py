@@ -6,7 +6,7 @@ from data_loader import load_data
 
 st.set_page_config(page_title="Real Estate Dashboard", layout="wide")
 
-st.title("Real Estate Transaction Dashboard")
+st.title("Real Estate Market Dashboard")
 
 @st.cache_data
 def get_data():
@@ -17,174 +17,187 @@ df, error = get_data()
 
 if df is None:
     st.error(f"Failed to load data. {error}")
-    st.info("Check if 'recent_sales.txt' is in your GitHub repository and its size in GitHub. If it's missing, you may need to commit it again.")
+    st.info("Check if 'recent_sales.txt' is in your GitHub repository and its size in GitHub.")
     st.stop()
 
-# Sidebar Filters
-st.sidebar.header("Drill Down Filters")
+# --- Pre-processing for Tabs ---
+if 'Registration' in df.columns and pd.api.types.is_datetime64_any_dtype(df['Registration']):
+    df['Year'] = df['Registration'].dt.year
+    df['Quarter'] = df['Registration'].dt.to_period('Q').astype(str)
 
-# Initialize filtered_df
-filtered_df = df.copy()
+# Top level navigation
+main_tab1, main_tab2 = st.tabs(["Real Estate Transaction Dashboard", "Real Estate Early Indicators"])
 
-# 1. Asset Type
-asset_types = ["All"] + sorted(filtered_df['Asset Type'].dropna().unique().tolist())
-selected_asset_type = st.sidebar.selectbox("Asset Type", asset_types)
+# --- Sidebar Filters (Shared) ---
+st.sidebar.header("Geography Filters")
 
-if selected_asset_type != "All":
-    filtered_df = filtered_df[filtered_df['Asset Type'] == selected_asset_type]
-
-# 2. Property Type
-# Filter options based on previous selection to make it dynamic? Or keep static list? 
-# Dynamic is better UX.
-property_types = ["All"] + sorted(filtered_df['Property Type'].dropna().unique().tolist())
-selected_property_type = st.sidebar.selectbox("Property Type", property_types)
-
-if selected_property_type != "All":
-    filtered_df = filtered_df[filtered_df['Property Type'] == selected_property_type]
-
-# 3. Sale Type (Type)
-sale_types = ["All"] + sorted(filtered_df['Sale Type'].dropna().unique().tolist())
-selected_sale_type = st.sidebar.selectbox("Sale Type", sale_types)
-
-if selected_sale_type != "All":
-    filtered_df = filtered_df[filtered_df['Sale Type'] == selected_sale_type]
-
-# 4. Sequence
-sequences = ["All"] + sorted(filtered_df['Sequence'].dropna().unique().tolist())
-selected_sequence = st.sidebar.selectbox("Sequence", sequences)
-
-if selected_sequence != "All":
-    filtered_df = filtered_df[filtered_df['Sequence'] == selected_sequence]
-
-# Filter by District
-districts = ["All"] + sorted(filtered_df['District'].dropna().unique().tolist())
+# We want geography filters to apply to both tabs
+districts = ["All"] + sorted(df['District'].dropna().unique().tolist())
 selected_district = st.sidebar.selectbox("District", districts)
 
+geo_filtered_df = df.copy()
 if selected_district != "All":
-    filtered_df = filtered_df[filtered_df['District'] == selected_district]
+    geo_filtered_df = geo_filtered_df[geo_filtered_df['District'] == selected_district]
 
-# Filter by Community
-communities = ["All"] + sorted(filtered_df['Community'].dropna().unique().tolist())
+communities = ["All"] + sorted(geo_filtered_df['Community'].dropna().unique().tolist())
 selected_community = st.sidebar.selectbox("Community", communities)
 
 if selected_community != "All":
-    filtered_df = filtered_df[filtered_df['Community'] == selected_community]
+    geo_filtered_df = geo_filtered_df[geo_filtered_df['Community'] == selected_community]
 
-# Filter by Project
-projects = ["All"] + sorted(filtered_df['Project'].dropna().unique().tolist())
+projects = ["All"] + sorted(geo_filtered_df['Project'].dropna().unique().tolist())
 selected_project = st.sidebar.selectbox("Project", projects)
 
 if selected_project != "All":
-    filtered_df = filtered_df[filtered_df['Project'] == selected_project]
-    
-# Filter by Registration (Year)
-if 'Registration' in filtered_df.columns and pd.api.types.is_datetime64_any_dtype(filtered_df['Registration']):
-    filtered_df['Year'] = filtered_df['Registration'].dt.year
-    filtered_df['Quarter'] = filtered_df['Registration'].dt.to_period('Q').astype(str)
-    
-    years = ["All"] + sorted(filtered_df['Year'].dropna().unique().astype(int).tolist())
+    geo_filtered_df = geo_filtered_df[geo_filtered_df['Project'] == selected_project]
+
+# Registration Year Filter
+if 'Year' in geo_filtered_df.columns:
+    years = ["All"] + sorted(geo_filtered_df['Year'].dropna().unique().astype(int).tolist())
     selected_year = st.sidebar.selectbox("Select Year", years)
-    
     if selected_year != "All":
-        filtered_df = filtered_df[filtered_df['Year'] == selected_year]
-else:
-    st.warning("Registration date parsing issue, time filters disabled.")
+        geo_filtered_df = geo_filtered_df[geo_filtered_df['Year'] == selected_year]
 
-# Main Metrics
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Total Transactions", len(filtered_df))
-with col2:
-    avg_price = filtered_df['Price (AED)'].mean()
-    st.metric("Average Price", f"AED {avg_price:,.0f}" if not pd.isna(avg_price) else "-")
-with col3:
-    avg_rate = filtered_df['Rate (AED/sqm)'].mean()
-    st.metric("Average Rate (AED/sqm)", f"{avg_rate:,.2f}" if not pd.isna(avg_rate) else "-")
 
-# --- Time Series Section ---
-st.subheader("Price & Rate Trends")
-
-interval = st.radio("Select Interval", ["Yearly", "Quarterly", "Monthly"], horizontal=True)
-
-if 'Registration' in filtered_df.columns and not filtered_df['Registration'].isna().all():
-    if interval == "Yearly":
-        group_col = 'Year'
-    elif interval == "Quarterly":
-        group_col = 'Quarter'
-    else:
-        filtered_df['MonthYear'] = filtered_df['Registration'].dt.to_period('M').astype(str)
-        group_col = 'MonthYear'
-        
-    trend_df = filtered_df.groupby(group_col)[['Price (AED)', 'Rate (AED/sqm)']].mean().reset_index()
+with main_tab1:
+    st.header("Transaction Analysis")
     
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        fig_price = px.line(trend_df, x=group_col, y='Price (AED)', title=f'Average Price Trend ({interval})')
-        st.plotly_chart(fig_price, use_container_width=True)
-    with col_t2:
-        fig_rate = px.line(trend_df, x=group_col, y='Rate (AED/sqm)', title=f'Average Rate Trend ({interval})')
-        st.plotly_chart(fig_rate, use_container_width=True)
-else:
-    st.info("No Date information available for trends.")
+    # Sub-filters specific to this tab
+    st.markdown("### Detail Filters")
+    col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+    
+    with col_f1:
+        asset_types = ["All"] + sorted(geo_filtered_df['Asset Type'].dropna().unique().tolist())
+        selected_asset_type = st.selectbox("Asset Type", asset_types)
+        tab1_df = geo_filtered_df.copy()
+        if selected_asset_type != "All":
+            tab1_df = tab1_df[tab1_df['Asset Type'] == selected_asset_type]
 
-# --- Area Analysis ---
-st.subheader("Average Rate per Area")
+    with col_f2:
+        property_types = ["All"] + sorted(tab1_df['Property Type'].dropna().unique().tolist())
+        selected_property_type = st.selectbox("Property Type", property_types)
+        if selected_property_type != "All":
+            tab1_df = tab1_df[tab1_df['Property Type'] == selected_property_type]
 
-col_area1, col_area2 = st.columns(2)
+    with col_f3:
+        sale_types = ["All"] + sorted(tab1_df['Sale Type'].dropna().unique().tolist())
+        selected_sale_type = st.selectbox("Sale Type", sale_types)
+        if selected_sale_type != "All":
+            tab1_df = tab1_df[tab1_df['Sale Type'] == selected_sale_type]
 
-with col_area1:
-    avg_rate_district = filtered_df.groupby('District')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
-    fig_dist = px.bar(avg_rate_district, x='District', y='Rate (AED/sqm)', title='Top 10 Districts by Avg Rate')
-    st.plotly_chart(fig_dist, use_container_width=True)
+    with col_f4:
+        sequences = ["All"] + sorted(tab1_df['Sequence'].dropna().unique().tolist())
+        selected_sequence = st.selectbox("Sequence", sequences)
+        if selected_sequence != "All":
+            tab1_df = tab1_df[tab1_df['Sequence'] == selected_sequence]
 
-with col_area2:
-    avg_rate_comm = filtered_df.groupby('Community')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
-    fig_comm = px.bar(avg_rate_comm, x='Community', y='Rate (AED/sqm)', title='Top 10 Communities by Avg Rate')
-    st.plotly_chart(fig_comm, use_container_width=True)
+    # Main Metrics
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        st.metric("Total Transactions", len(tab1_df))
+    with m2:
+        avg_price = tab1_df['Price (AED)'].mean()
+        st.metric("Average Price", f"AED {avg_price:,.0f}" if not pd.isna(avg_price) else "-")
+    with m3:
+        avg_rate = tab1_df['Rate (AED/sqm)'].mean()
+        st.metric("Average Rate (AED/sqm)", f"{avg_rate:,.2f}" if not pd.isna(avg_rate) else "-")
 
-# --- Drill Down Section ---
-st.subheader("Distribution and Composition (by Rate)")
+    # Time Series
+    st.subheader("Price & Rate Trends")
+    interval = st.radio("Select Interval", ["Yearly", "Quarterly", "Monthly"], horizontal=True, key="tab1_interval")
 
-tab1, tab2, tab3, tab4 = st.tabs(["District", "Community", "Project", "Registration / Sale Type"])
+    if 'Registration' in tab1_df.columns and not tab1_df['Registration'].isna().all():
+        if interval == "Yearly": group_col = 'Year'
+        elif interval == "Quarterly": group_col = 'Quarter'
+        else:
+            tab1_df['MonthYear'] = tab1_df['Registration'].dt.to_period('M').astype(str)
+            group_col = 'MonthYear'
+            
+        trend_df = tab1_df.groupby(group_col)[['Price (AED)', 'Rate (AED/sqm)']].mean().reset_index()
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            st.plotly_chart(px.line(trend_df, x=group_col, y='Price (AED)', title=f'Avg Price ({interval})'), use_container_width=True)
+        with col_t2:
+            st.plotly_chart(px.line(trend_df, x=group_col, y='Rate (AED/sqm)', title=f'Avg Rate ({interval})'), use_container_width=True)
 
-with tab1:
-    col_d1, col_d2 = st.columns(2)
-    with col_d1:
-        dist_rate = filtered_df.groupby('District')['Rate (AED/sqm)'].mean().sort_values(ascending=False).head(10).reset_index()
-        fig_p1 = px.pie(dist_rate, names='District', values='Rate (AED/sqm)', title='Top 10 Districts (Avg Rate Share)')
-        st.plotly_chart(fig_p1)
-    with col_d2:
-        fig_h1 = px.histogram(filtered_df, x='Rate (AED/sqm)', color='District', nbins=50, title="Rate Distribution by District")
-        st.plotly_chart(fig_h1)
+    # Area Analysis
+    st.subheader("Average Rate per Area")
+    c_a1, c_a2 = st.columns(2)
+    with c_a1:
+        df_d = tab1_df.groupby('District')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
+        st.plotly_chart(px.bar(df_d, x='District', y='Rate (AED/sqm)', title='Top Districts'), use_container_width=True)
+    with c_a2:
+        df_c = tab1_df.groupby('Community')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
+        st.plotly_chart(px.bar(df_c, x='Community', y='Rate (AED/sqm)', title='Top Communities'), use_container_width=True)
 
-with tab2:
-    col_c1, col_c2 = st.columns(2)
-    with col_c1:
-        comm_rate = filtered_df.groupby('Community')['Rate (AED/sqm)'].mean().sort_values(ascending=False).head(10).reset_index()
-        fig_p2 = px.pie(comm_rate, names='Community', values='Rate (AED/sqm)', title='Top 10 Communities (Avg Rate Share)')
-        st.plotly_chart(fig_p2)
-    with col_c2:
-        fig_h2 = px.histogram(filtered_df, x='Rate (AED/sqm)', color='Community', nbins=50, title="Rate Distribution by Community")
-        st.plotly_chart(fig_h2)
+    # Drill Downs
+    st.subheader("Drill Downs")
+    d_tab1, d_tab2, d_tab3 = st.tabs(["District", "Community", "Project"])
+    with d_tab1:
+        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='District', title="Rate Dist by District"))
+    with d_tab2:
+        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='Community', title="Rate Dist by Community"))
+    with d_tab3:
+        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='Project', title="Rate Dist by Project"))
 
-with tab3:
-    col_pr1, col_pr2 = st.columns(2)
-    with col_pr1:
-        proj_rate = filtered_df.groupby('Project')['Rate (AED/sqm)'].mean().sort_values(ascending=False).head(10).reset_index()
-        fig_p3 = px.pie(proj_rate, names='Project', values='Rate (AED/sqm)', title='Top 10 Projects (Avg Rate Share)')
-        st.plotly_chart(fig_p3)
-    with col_pr2:
-        fig_h3 = px.histogram(filtered_df, x='Rate (AED/sqm)', color='Project', nbins=50, title="Rate Distribution by Project")
-        st.plotly_chart(fig_h3)
 
-with tab4:
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
-        if 'Sale Type' in filtered_df.columns:
-            sale_rate = filtered_df.groupby('Sale Type')['Rate (AED/sqm)'].mean().reset_index()
-            fig_p4 = px.pie(sale_rate, names='Sale Type', values='Rate (AED/sqm)', title='Sale Type by Avg Rate')
-            st.plotly_chart(fig_p4)
-    with col_s2:
-        if 'Sale Type' in filtered_df.columns:
-            fig_h4 = px.histogram(filtered_df, x='Rate (AED/sqm)', color='Sale Type', nbins=50, title="Rate Distribution by Sale Type")
-            st.plotly_chart(fig_h4)
+with main_tab2:
+    st.header("Real Estate Early Indicators")
+    
+    if 'Quarter' not in geo_filtered_df.columns:
+        st.warning("Date information missing. Indicators cannot be calculated.")
+    else:
+        # Calculate Indicators
+        # We need data grouped by Quarter and Asset Type/Sale Type
+        
+        # 1. Ratios: Offplan/Ready
+        # Group by Quarter, Asset Type, Sale Type
+        base_counts = geo_filtered_df.groupby(['Quarter', 'Asset Type', 'Sale Type']).size().reset_index(name='count')
+        
+        def calc_ratio(asset):
+            sub = base_counts[base_counts['Asset Type'] == asset]
+            pivot = sub.pivot(index='Quarter', columns='Sale Type', values='count').fillna(0)
+            if 'Off-plan' in pivot.columns and 'Ready' in pivot.columns:
+                # Avoid div by zero
+                pivot[f'{asset} Offplan/Ready'] = pivot['Off-plan'] / pivot['Ready'].replace(0, 1)
+                return pivot[[f'{asset} Offplan/Ready']]
+            return pd.DataFrame(index=base_counts['Quarter'].unique())
+
+        res_ratio = calc_ratio('Residential')
+        com_ratio = calc_ratio('Commercial')
+        
+        ratio_df = res_ratio.join(com_ratio, how='outer').reset_index().sort_values('Quarter')
+        
+        st.subheader("Market Composition: Offplan vs Ready Ratio")
+        fig1 = px.line(ratio_df, x='Quarter', y=['Residential Offplan/Ready', 'Commercial Offplan/Ready'],
+                       title="Offplan to Ready Transaction Ratio", markers=True)
+        st.plotly_chart(fig1, use_container_width=True)
+        
+        # 2. Growth Rates (QoQ)
+        # Group by Quarter and Asset Type for total sales volume
+        growth_counts = geo_filtered_df.groupby(['Quarter', 'Asset Type']).size().unstack(fill_value=0)
+        
+        qoq_growth = growth_counts.pct_change(fill_method=None) * 100
+        qoq_df = qoq_growth[['Residential', 'Commercial']].rename(columns={
+            'Residential': 'Residential sales growth rate (QoQ)',
+            'Commercial': 'Commercial sales growth rate (QoQ)'
+        }).reset_index().sort_values('Quarter')
+        
+        st.subheader("Sales Growth Momentum (Quarter-on-Quarter)")
+        fig2 = px.line(qoq_df, x='Quarter', y=['Residential sales growth rate (QoQ)', 'Commercial sales growth rate (QoQ)'],
+                       title="Sales Growth Rate (QoQ %)", markers=True)
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # 3. Growth Rates (YoY)
+        yoy_growth = growth_counts.pct_change(periods=4, fill_method=None) * 100
+        yoy_df = yoy_growth[['Residential', 'Commercial']].rename(columns={
+            'Residential': 'Residential sales growth rate (YoY)',
+            'Commercial': 'Commercial sales growth rate (YoY)'
+        }).reset_index().sort_values('Quarter')
+        
+        st.subheader("Long-term Market Momentum (Year-on-Year)")
+        fig3 = px.line(yoy_df, x='Quarter', y=['Residential sales growth rate (YoY)', 'Commercial sales growth rate (YoY)'],
+                       title="Sales Growth Rate (YoY %)", markers=True)
+        st.plotly_chart(fig3, use_container_width=True)
+
+        st.info("Growth rates are calculated based on the number of transactions.")
