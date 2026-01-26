@@ -134,11 +134,14 @@ with main_tab1:
     st.subheader("Drill Downs")
     d_tab1, d_tab2, d_tab3 = st.tabs(["District", "Community", "Project"])
     with d_tab1:
-        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='District', title="Rate Dist by District"))
+        dist_df = tab1_df.groupby('District')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
+        st.plotly_chart(px.pie(dist_df, values='Rate (AED/sqm)', names='District', title="Top 10 Districts by Avg Rate"), use_container_width=True)
     with d_tab2:
-        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='Community', title="Rate Dist by Community"))
+        comm_df = tab1_df.groupby('Community')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
+        st.plotly_chart(px.pie(comm_df, values='Rate (AED/sqm)', names='Community', title="Top 10 Communities by Avg Rate"), use_container_width=True)
     with d_tab3:
-        st.plotly_chart(px.histogram(tab1_df, x='Rate (AED/sqm)', color='Project', title="Rate Dist by Project"))
+        proj_df = tab1_df.groupby('Project')['Rate (AED/sqm)'].mean().reset_index().sort_values('Rate (AED/sqm)', ascending=False).head(10)
+        st.plotly_chart(px.pie(proj_df, values='Rate (AED/sqm)', names='Project', title="Top 10 Projects by Avg Rate"), use_container_width=True)
 
 
 with main_tab2:
