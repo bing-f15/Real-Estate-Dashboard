@@ -186,6 +186,7 @@ with main_tab2:
         st.subheader("Sales Growth Momentum (Quarter-on-Quarter)")
         fig2 = px.line(qoq_df, x='Quarter', y=['Residential sales growth rate (QoQ)', 'Commercial sales growth rate (QoQ)'],
                        title="Sales Growth Rate (QoQ %)", markers=True)
+        fig2.update_layout(yaxis_ticksuffix="%")
         st.plotly_chart(fig2, use_container_width=True)
         
         # 3. Growth Rates (YoY)
@@ -198,6 +199,7 @@ with main_tab2:
         st.subheader("Long-term Market Momentum (Year-on-Year)")
         fig3 = px.line(yoy_df, x='Quarter', y=['Residential sales growth rate (YoY)', 'Commercial sales growth rate (YoY)'],
                        title="Sales Growth Rate (YoY %)", markers=True)
+        fig3.update_layout(yaxis_ticksuffix="%")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.info("Growth rates are calculated based on the number of transactions.")
