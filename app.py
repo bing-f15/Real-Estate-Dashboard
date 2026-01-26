@@ -184,10 +184,17 @@ with main_tab2:
         }).reset_index().sort_values('Quarter')
         
         st.subheader("Sales Growth Momentum (Quarter-on-Quarter)")
-        fig2 = px.line(qoq_df, x='Quarter', y=['Residential sales growth rate (QoQ)', 'Commercial sales growth rate (QoQ)'],
-                       title="Sales Growth Rate (QoQ %)", markers=True)
-        fig2.update_layout(yaxis_ticksuffix="%")
-        st.plotly_chart(fig2, use_container_width=True)
+        col_g1, col_g2 = st.columns(2)
+        with col_g1:
+            fig2r = px.line(qoq_df, x='Quarter', y='Residential sales growth rate (QoQ)',
+                           title="Residential Sales Growth (QoQ %)", markers=True)
+            fig2r.update_layout(yaxis_ticksuffix="%")
+            st.plotly_chart(fig2r, use_container_width=True)
+        with col_g2:
+            fig2c = px.line(qoq_df, x='Quarter', y='Commercial sales growth rate (QoQ)',
+                           title="Commercial Sales Growth (QoQ %)", markers=True)
+            fig2c.update_layout(yaxis_ticksuffix="%")
+            st.plotly_chart(fig2c, use_container_width=True)
         
         # 3. Growth Rates (YoY)
         yoy_growth = growth_counts.pct_change(periods=4, fill_method=None) * 100
@@ -197,9 +204,16 @@ with main_tab2:
         }).reset_index().sort_values('Quarter')
         
         st.subheader("Long-term Market Momentum (Year-on-Year)")
-        fig3 = px.line(yoy_df, x='Quarter', y=['Residential sales growth rate (YoY)', 'Commercial sales growth rate (YoY)'],
-                       title="Sales Growth Rate (YoY %)", markers=True)
-        fig3.update_layout(yaxis_ticksuffix="%")
-        st.plotly_chart(fig3, use_container_width=True)
+        col_g3, col_g4 = st.columns(2)
+        with col_g3:
+            fig3r = px.line(yoy_df, x='Quarter', y='Residential sales growth rate (YoY)',
+                           title="Residential Sales Growth (YoY %)", markers=True)
+            fig3r.update_layout(yaxis_ticksuffix="%")
+            st.plotly_chart(fig3r, use_container_width=True)
+        with col_g4:
+            fig3c = px.line(yoy_df, x='Quarter', y='Commercial sales growth rate (YoY)',
+                           title="Commercial Sales Growth (YoY %)", markers=True)
+            fig3c.update_layout(yaxis_ticksuffix="%")
+            st.plotly_chart(fig3c, use_container_width=True)
 
         st.info("Growth rates are calculated based on the number of transactions.")
