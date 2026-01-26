@@ -168,6 +168,9 @@ with main_tab2:
         
         ratio_df = res_ratio.join(com_ratio, how='outer').reset_index().sort_values('Quarter')
         
+        # Exclude Q1 2026 and format
+        ratio_df = ratio_df[ratio_df['Quarter'] != '2026Q1']
+        
         st.subheader("Market Composition: Offplan vs Ready Ratio")
         fig1 = px.line(ratio_df, x='Quarter', y=['Residential Offplan/Ready', 'Commercial Offplan/Ready'],
                        title="Offplan to Ready Transaction Ratio", markers=True)
@@ -182,6 +185,11 @@ with main_tab2:
             'Residential': 'Residential sales growth rate (QoQ)',
             'Commercial': 'Commercial sales growth rate (QoQ)'
         }).reset_index().sort_values('Quarter')
+        
+        # Apply filters: Remove Q1 2026 and outliers > 600%
+        qoq_df = qoq_df[qoq_df['Quarter'] != '2026Q1']
+        for col in ['Residential sales growth rate (QoQ)', 'Commercial sales growth rate (QoQ)']:
+            qoq_df.loc[qoq_df[col] > 600, col] = None
         
         st.subheader("Sales Growth Momentum (Quarter-on-Quarter)")
         col_g1, col_g2 = st.columns(2)
@@ -202,6 +210,11 @@ with main_tab2:
             'Residential': 'Residential sales growth rate (YoY)',
             'Commercial': 'Commercial sales growth rate (YoY)'
         }).reset_index().sort_values('Quarter')
+        
+        # Apply filters: Remove Q1 2026 and outliers > 600%
+        yoy_df = yoy_df[yoy_df['Quarter'] != '2026Q1']
+        for col in ['Residential sales growth rate (YoY)', 'Commercial sales growth rate (YoY)']:
+            yoy_df.loc[yoy_df[col] > 600, col] = None
         
         st.subheader("Long-term Market Momentum (Year-on-Year)")
         col_g3, col_g4 = st.columns(2)
