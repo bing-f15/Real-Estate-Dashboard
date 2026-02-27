@@ -27,7 +27,7 @@ if 'Registration' in df.columns and pd.api.types.is_datetime64_any_dtype(df['Reg
     df['Quarter'] = df['Registration'].dt.to_period('Q').astype(str)
 
 # Top level navigation
-main_tab1, main_tab2 = st.tabs(["Real Estate Transaction Dashboard", "Real Estate Early Warning Indicators"])
+main_tab1, main_tab2 = st.tabs(["Real Estate Transaction Dashboard", "Real Estate Growth Indicators"])
 
 # --- Sidebar Filters (Shared) ---
 st.sidebar.header("Geography Filters")
@@ -146,7 +146,7 @@ with main_tab1:
 
 
 with main_tab2:
-    st.header("Real Estate Early Warning Indicators")
+    st.header("Real Estate Growth Indicators")
     
     if 'Quarter' not in geo_filtered_df.columns:
         st.warning("Date information missing. Indicators cannot be calculated.")
