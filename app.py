@@ -7,7 +7,8 @@ from data_loader import load_data
 
 st.set_page_config(page_title="Real Estate Dashboard", layout="wide")
 
-st.title("Abu Dhabi Real Estate Market Dashboard (Developed by Lipei Zhang)")
+st.title("Abu Dhabi Real Estate Market Dashboard")
+st.markdown("<p style='font-size: 18px;'>Developed by Lipei Zhang</p>", unsafe_allow_html=True)
 
 @st.cache_data
 def get_data():
