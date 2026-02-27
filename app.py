@@ -7,7 +7,7 @@ from data_loader import load_data
 
 st.set_page_config(page_title="Real Estate Dashboard", layout="wide")
 
-st.title("Real Estate Market Dashboard")
+st.title("Abu Dhabi Real Estate Market Dashboard (Developed by Lipei Zhang)")
 
 @st.cache_data
 def get_data():
@@ -261,7 +261,7 @@ with main_tab2:
         st.info("Growth rates are calculated based on the number of transactions.")
 
         # 4. Speculation Metrics (Flip Rate & Appreciation)
-        st.subheader("Speculation Momentum")
+        st.subheader("Flipping Momentum")
         
         # Property attributes for identification
         prop_cols = ['Sold Area (sqm)', 'Plot Area (sqm)', 'Layout', 'District', 'Community', 'Project']
